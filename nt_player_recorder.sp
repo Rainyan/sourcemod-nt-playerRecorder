@@ -50,7 +50,7 @@ public Plugin:myinfo =
 	description = "Clientside demo replay recorder",
 	version = PLUGIN_VERSION,
 	url = g_githubUrl
-}
+};
 
 public OnPluginStart()
 {
