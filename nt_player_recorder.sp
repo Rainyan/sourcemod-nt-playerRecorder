@@ -88,7 +88,7 @@ public Action:Event_RoundStart(Handle:event, const String:Name[], bool:Broadcast
 	{
 		roundCount++;
 	}
-	else // Plugin was loaded mid-game. Try to guess current round number based on team scores. This won't take ties to count but oh well.
+	else // Deduce round count from team scores, in case we got loaded mid game. This ignores ties but oh well.
 	{
 		roundCount += GetTeamScore(2) + GetTeamScore(3);
 	}
