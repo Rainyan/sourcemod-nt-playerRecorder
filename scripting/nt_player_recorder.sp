@@ -2,6 +2,7 @@
 
 #include <sourcemod>
 #include <sdktools>
+#include <neotokyo>
 
 #define PLUGIN_VERSION "0.1"
 
@@ -65,14 +66,6 @@ public void OnPluginStart()
 bool Contains(const char[] haystack, const char[] needle)
 {
 	if (StrContains(haystack, needle, false) != -1)
-		return true;
-
-	return false;
-}
-
-bool IsValidClient(int client)
-{
-	if (client != 0 && IsClientConnected(client) && !IsFakeClient(client))
 		return true;
 
 	return false;
