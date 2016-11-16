@@ -233,7 +233,6 @@ public Action Panel_Record_Main(int client, int args)
 
 	DrawPanelItem(panel, "Edit recording behaviour");
 	DrawPanelItem(panel, "Edit highlight mode criteria");
-	DrawPanelItem(panel, "Help");
 	DrawPanelItem(panel, "Exit");
 
 	SendPanelToClient(panel, client, PanelHandler_Main, 20);
@@ -287,8 +286,9 @@ public PanelHandler_Preferences(Handle menu, MenuAction action, int client, int 
 	// Go back
 	else
 	{
-		EmitSoundToClient(client, g_menuSoundCancel);
 		Panel_Record_Main(client, 2);
+		PrecacheSound(g_menuSoundCancel);
+		EmitSoundToClient(client, g_menuSoundCancel);
 	}
 }
 
