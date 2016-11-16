@@ -44,7 +44,7 @@ bool IsEditingXPThreshold[MAXPLAYERS+1];
 
 // Global integers
 int clientTotalXP[MAXPLAYERS+1] = 0;
-int highlightXPThreshold[MAXPLAYERS+1] = 4; // Default XP threshold for the highlights mode
+int highlightXPThreshold[MAXPLAYERS+1] = HIGHLIGHT_THRESHOLD_DEFAULT;
 int roundCount;
 int g_preference[MAXPLAYERS+1] = PREF_ALL_ROUNDS;
 
@@ -86,7 +86,15 @@ public void OnMapEnd()
 			continue;
 
 		if (IsRecording[i])
-			ClientCommand(i, "stop"); // Stop recording, so the game doesn't autoincrement filenames (this would mess up map names in file names etc.)
+		{
+			if (IsValidClient(i))
+			{
+				// Stop recording, so the game doesn't autoincrement filenames.
+				// This would mess up map names in file names etc.
+				ClientCommand(i, "stop");
+			}
+			IsRecording[i] = false;
+		}
 	}
 }
 
