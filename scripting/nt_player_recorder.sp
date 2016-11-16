@@ -454,79 +454,17 @@ public Action Command_ConfigureRecord(int client, int choice)
 
 void GenerateRandomID(int client)
 {
-	strcopy(g_randomID[client], sizeof(g_randomID), ""); // Empty the string first
+	char alphanumeric[] = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890";
+	int length = strlen(alphanumeric);
 
-	char charArray[62][1] = // Array of 0-9, a-Z
+	// Concatenate a random character from the array one at a time
+	int i;
+	for (i = 0; i < 10; i++)
 	{
-		"0",
-		"1",
-		"2",
-		"3",
-		"4",
-		"5",
-		"6",
-		"7",
-		"8",
-		"9",
-		"a",
-		"b",
-		"c",
-		"d",
-		"e",
-		"f",
-		"g",
-		"h",
-		"i",
-		"j",
-		"k",
-		"l",
-		"m",
-		"n",
-		"o",
-		"p",
-		"q",
-		"r",
-		"s",
-		"t",
-		"u",
-		"v",
-		"w",
-		"x",
-		"y",
-		"z",
-		"A",
-		"B",
-		"C",
-		"D",
-		"E",
-		"F",
-		"G",
-		"H",
-		"I",
-		"J",
-		"K",
-		"L",
-		"M",
-		"N",
-		"O",
-		"P",
-		"Q",
-		"R",
-		"S",
-		"T",
-		"U",
-		"V",
-		"W",
-		"X",
-		"Y",
-		"Z"
-	};
-
-	for (int i = 0; i < 10; i++)
-	{
-		// Concatenate a random character from the array one at a time
-		StrCat(g_randomID[client], sizeof(g_randomID), charArray[GetRandomInt(0, 61)]);
+		int randomIndex = GetRandomInt(0, length - 1);
+		g_randomID[client][i] = alphanumeric[randomIndex];
 	}
+	g_randomID[client][i] = 0;
 }
 
 bool Contains(const char[] haystack, const char[] needle)
