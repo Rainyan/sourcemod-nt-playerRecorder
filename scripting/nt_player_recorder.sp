@@ -16,7 +16,8 @@ enum {
 enum {
 	PANEL_CHOICE_RECORD = 1,
 	PANEL_CHOICE_MODE,
-	PANEL_CHOICE_CRITERIA
+	PANEL_CHOICE_CRITERIA,
+	PANEL_CHOICE_ENUM_COUNT
 };
 
 #define HIGHLIGHT_THRESHOLD_DEFAULT 4
@@ -243,46 +244,51 @@ public Action Panel_Record_Main(int client, int args)
 
 public PanelHandler_Main(Handle menu, MenuAction action, int client, int choice)
 {
-	if (action == MenuAction_Select)
-	{
-		if (choice < 5)
-		{
-			EmitSoundToClient(client, g_menuSoundOk);
-			Command_ConfigureRecord(client, choice);
-		}
+	if (action != MenuAction_Select)
+		return;
 
-		else // Exit
-			EmitSoundToClient(client, g_menuSoundCancel);
+	if (choice < PANEL_CHOICE_ENUM_COUNT)
+	{
+		Command_ConfigureRecord(client, choice);
+		PrecacheSound(g_menuSoundOk);
+		EmitSoundToClient(client, g_menuSoundOk);
+	}
+	// Exit
+	else
+	{
+		PrecacheSound(g_menuSoundCancel);
+		EmitSoundToClient(client, g_menuSoundCancel);
 	}
 }
 
 public PanelHandler_Preferences(Handle menu, MenuAction action, int client, int choice)
 {
-	if (action == MenuAction_Select)
+	if (action != MenuAction_Select)
+		return;
+
+	// Edit preference
+	if (choice == 1)
 	{
-		if (choice == 1) // Edit preference
-		{
-			EmitSoundToClient(client, g_menuSoundOk);
+		Handle panel = CreatePanel();
+		SetPanelTitle(panel, "Edit preference");
 
-			Handle panel = CreatePanel();
-			SetPanelTitle(panel, "Edit preference");
+		DrawPanelText(panel, " ");
+		DrawPanelItem(panel, g_prefWholeMaps);
+		DrawPanelItem(panel, g_prefHighlights);
+		DrawPanelItem(panel, g_prefAllRounds);
+		DrawPanelItem(panel, "Back");
 
-			DrawPanelText(panel, " ");
-			DrawPanelItem(panel, g_prefWholeMaps);
-			DrawPanelItem(panel, g_prefHighlights);
-			DrawPanelItem(panel, g_prefAllRounds);
-			DrawPanelItem(panel, "Back");
+		SendPanelToClient(panel, client, PanelHandler_Preferences_Edit, 20);
+		CloseHandle(panel);
 
-			SendPanelToClient(panel, client, PanelHandler_Preferences_Edit, 20);
-
-			CloseHandle(panel);
-		}
-
-		else // Go back
-		{
-			EmitSoundToClient(client, g_menuSoundCancel);
-			Panel_Record_Main(client, 2);
-		}
+		PrecacheSound(g_menuSoundOk);
+		EmitSoundToClient(client, g_menuSoundOk);
+	}
+	// Go back
+	else
+	{
+		EmitSoundToClient(client, g_menuSoundCancel);
+		Panel_Record_Main(client, 2);
 	}
 }
 
