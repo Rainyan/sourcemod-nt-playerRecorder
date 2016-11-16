@@ -7,8 +7,6 @@
 #define PLUGIN_VERSION "0.1"
 //#define DEBUG
 
-#define MENU_TIME 20
-
 enum {
 	PREF_WHOLE_MAPS = 1,
 	PREF_HIGHLIGHTS,
@@ -23,6 +21,8 @@ enum {
 	PANEL_CHOICE_ENUM_COUNT
 };
 
+#define DEFAULT_PREFERENCE PREF_WHOLE_MAPS
+#define MENU_TIME 20
 #define HIGHLIGHT_THRESHOLD_DEFAULT 4
 
 // TODO: translation phrases
@@ -41,8 +41,8 @@ bool g_bIsEditingXPThreshold[MAXPLAYERS+1];
 bool g_bIsRecording[MAXPLAYERS+1];
 
 int g_iClientTotalXP[MAXPLAYERS+1] = 0;
-int g_iHighlightXPThreshold[MAXPLAYERS+1] = HIGHLIGHT_THRESHOLD_DEFAULT;
-int g_iPreference[MAXPLAYERS+1] = PREF_ALL_ROUNDS;
+int g_iHighlightXPThreshold[MAXPLAYERS+1];
+int g_iPreference[MAXPLAYERS+1];
 int g_iRoundCount;
 
 public Plugin myinfo =
@@ -56,15 +56,22 @@ public Plugin myinfo =
 
 public void OnPluginStart()
 {
+	RegConsoleCmd("sm_rec", Panel_Record_Main, "Toggle client demo recording plugin");
 	RegConsoleCmd("sm_record", Panel_Record_Main, "Toggle client demo recording plugin");
 	HookEvent("game_round_start", Event_RoundStart);
 }
 
 public void OnClientDisconnect(int client)
 {
+	// FIXME !!! It's not in time, need some other way
+
+	// Stop recording, so the game doesn't autoincrement filenames.
+	// This would mess up map names in file names etc.
+	ClientCommand(client, "stop");
+
 	g_iClientTotalXP[client] = 0;
-	g_iHighlightXPThreshold[client] = HIGHLIGHT_THRESHOLD_DEFAULT;
-	g_iPreference = PREF_ALL_ROUNDS;
+	g_iHighlightXPThreshold[client] = 0;
+	g_iPreference[client] = 0;
 
 	g_bIsEditingXPThreshold[client] = false;
 	g_bIsRecording[client] = false;
@@ -73,22 +80,6 @@ public void OnClientDisconnect(int client)
 public void OnMapEnd()
 {
 	g_iRoundCount = 0;
-
-	for (int i = 1; i <= MaxClients; i++)
-	{
-		if (!IsValidClient(i) || IsFakeClient(i))
-			continue;
-
-		if (g_bIsRecording[i])
-		{
-			if (IsValidClient(i))
-			{
-				// Stop recording, so the game doesn't autoincrement filenames.
-				// This would mess up map names in file names etc.
-				ClientCommand(i, "stop");
-			}
-		}
-	}
 }
 
 public Action Event_RoundStart(Handle event, const char[] Name, bool dontBroadcast)
@@ -146,15 +137,13 @@ g_bIsRecording[client] = false", g_sTag, client);
 			if (g_iRoundCount < 1)
 			{
 				Format(commandBuffer, sizeof(commandBuffer),
-					"record auto_%s_time-%s_warmup", time, mapName);
+					"record auto_%s_%s_warmup", time, mapName);
 			}
 			else
 			{
 				Format(commandBuffer, sizeof(commandBuffer),
-					"record auto_%s_time-%s_round-%i", time, mapName, g_iRoundCount);
+					"record auto_%s_%s_round-%i", time, mapName, g_iRoundCount);
 			}
-
-			ReplaceString(commandBuffer, sizeof(commandBuffer), "record ", "");
 			strcopy(g_sReplayFile[client], sizeof(g_sReplayFile), commandBuffer);
 		}
 		// Record whole maps
@@ -205,6 +194,9 @@ public Action Panel_Record_Main(int client, int args)
 	SetPanelTitle(panel, "Automatic Round Recorder");
 	DrawPanelText(panel, " ");
 
+	if (g_iPreference[client] == 0)
+		g_iPreference[client] = DEFAULT_PREFERENCE;
+
 	char prefBuffer[128];
 	if (g_iPreference[client] == PREF_WHOLE_MAPS)
 	{
@@ -214,9 +206,15 @@ public Action Panel_Record_Main(int client, int args)
 	{
 		Format(prefBuffer, sizeof(prefBuffer), "Recording mode: %s", g_sPrefHighlights);
 	}
-	else
+	else if (g_iPreference[client] == PREF_ALL_ROUNDS)
 	{
 		Format(prefBuffer, sizeof(prefBuffer), "Recording mode: %s", g_sPrefAllRounds);
+	}
+	else
+	{
+		CloseHandle(panel);
+		ReplyToCommand(client, "%s Something went wrong, perhaps poke your admin.", g_sTag);
+		ThrowError("Invalid g_iPreference %i, cannot start recording.", g_iPreference[client]);
 	}
 
 	if (g_bIsRecording[client])
