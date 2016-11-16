@@ -7,6 +7,8 @@
 #define PLUGIN_VERSION "0.1"
 //#define DEBUG
 
+#define MENU_TIME 20
+
 enum {
 	PREF_WHOLE_MAPS = 1,
 	PREF_HIGHLIGHTS,
@@ -239,7 +241,7 @@ public Action Panel_Record_Main(int client, int args)
 	DrawPanelItem(panel, "Edit highlight mode criteria");
 	DrawPanelItem(panel, "Exit");
 
-	SendPanelToClient(panel, client, PanelHandler_Main, 20);
+	SendPanelToClient(panel, client, PanelHandler_Main, MENU_TIME);
 	CloseHandle(panel);
 
 	return Plugin_Handled;
@@ -281,7 +283,7 @@ public PanelHandler_Preferences(Handle menu, MenuAction action, int client, int 
 		DrawPanelItem(panel, g_sPrefAllRounds);
 		DrawPanelItem(panel, "Back");
 
-		SendPanelToClient(panel, client, PanelHandler_Preferences_Edit, 20);
+		SendPanelToClient(panel, client, PanelHandler_Preferences_Edit, MENU_TIME);
 		CloseHandle(panel);
 
 		PrecacheSound(g_sMenuSoundOK);
@@ -318,23 +320,25 @@ public PanelHandler_Preferences_Edit(Handle menu, MenuAction action, int client,
 
 public PanelHandler_HighlightCriteria(Handle menu, MenuAction action, int client, int choice)
 {
-	if (action == MenuAction_Select)
-	{
-		if (choice == 1)
-		{
-			EmitSoundToClient(client, g_sMenuSoundOK);
-			PrintToChat(client, "%s Please type the XP threshold in the chat. Type \"cancel\" to cancel.", g_sTag);
-			g_bIsEditingXPThreshold[client] = true;
-			AddCommandListener(SayCallback_XPThreshold, "say");
-			AddCommandListener(SayCallback_XPThreshold, "say_team");
-		}
+	if (action != MenuAction_Select)
+		return;
 
-		else
-		{
-			EmitSoundToClient(client, g_sMenuSoundCancel);
-			Panel_Record_Main(client, 1); // Back to main menu.
-		}
+	if (choice == 1)
+	{
+		PrintToChat(client, "%s Please type the XP threshold in the chat. \
+Type \"cancel\" to cancel.", g_sTag);
+		g_bIsEditingXPThreshold[client] = true;
+		AddCommandListener(SayCallback_XPThreshold, "say");
+		AddCommandListener(SayCallback_XPThreshold, "say_team");
+
+		PrecacheSound(g_sMenuSoundOK);
+		EmitSoundToClient(client, g_sMenuSoundOK);
+		return;
 	}
+	// Back to main menu.
+	PrecacheSound(g_sMenuSoundCancel);
+	EmitSoundToClient(client, g_sMenuSoundCancel);
+	Panel_Record_Main(client, 1);
 }
 
 public Action SayCallback_XPThreshold(int client, const char[] command, int argc)
@@ -358,7 +362,6 @@ public Action SayCallback_XPThreshold(int client, const char[] command, int argc
 	}
 
 	int threshold = StringToInt(message);
-
 	if (threshold < 0)
 	{
 		PrintToChat(client, "%s Please insert a positive integer value.", g_sTag);
@@ -367,7 +370,6 @@ public Action SayCallback_XPThreshold(int client, const char[] command, int argc
 	}
 
 	g_iHighlightXPThreshold[client] = threshold;
-
 	g_bIsEditingXPThreshold[client] = false;
 
 	RemoveCommandListener(SayCallback_XPThreshold, "say");
@@ -376,7 +378,6 @@ public Action SayCallback_XPThreshold(int client, const char[] command, int argc
 	PrintToChat(client, "%s Threshold has been changed to %i XP.", g_sTag, threshold);
 
 	Command_ConfigureRecord(client, 3); // Draw the XP edit panel again.
-
 	return Plugin_Stop;
 }
 
@@ -393,7 +394,6 @@ void Command_ConfigureRecord(int client, int choice)
 				g_bIsRecording[client] = false;
 				Panel_Record_Main(client, 1);
 			}
-
 			else
 			{
 				g_bIsRecording[client] = true;
@@ -406,10 +406,9 @@ void Command_ConfigureRecord(int client, int choice)
 		{
 			Handle panel = CreatePanel();
 			SetPanelTitle(panel, "Recording preferences");
-
 			DrawPanelText(panel, " ");
-			char prefBuffer[128];
 
+			char prefBuffer[128];
 			if (g_iPreference[client] == PREF_WHOLE_MAPS)
 			{
 				Format(prefBuffer, sizeof(prefBuffer), "Recording mode: %s", g_sPrefWholeMaps);
@@ -428,14 +427,13 @@ void Command_ConfigureRecord(int client, int choice)
 			DrawPanelItem(panel, "Change behaviour");
 			DrawPanelItem(panel, "Back");
 
-			SendPanelToClient(panel, client, PanelHandler_Preferences, 20);
+			SendPanelToClient(panel, client, PanelHandler_Preferences, MENU_TIME);
 			CloseHandle(panel);
 		}
 
 		case PANEL_CHOICE_CRITERIA:
 		{
 			Handle panel = CreatePanel();
-
 			SetPanelTitle(panel, "Edit highlight mode criteria");
 			DrawPanelText(panel, " ");
 
@@ -446,7 +444,7 @@ void Command_ConfigureRecord(int client, int choice)
 			DrawPanelItem(panel, "Edit XP threshold for saving a round replay");
 			DrawPanelItem(panel, "Back");
 
-			SendPanelToClient(panel, client, PanelHandler_HighlightCriteria, 20);
+			SendPanelToClient(panel, client, PanelHandler_HighlightCriteria, MENU_TIME);
 			CloseHandle(panel);
 		}
 	}
