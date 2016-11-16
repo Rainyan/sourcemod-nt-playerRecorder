@@ -59,21 +59,14 @@ public Plugin myinfo =
 
 public void OnPluginStart()
 {
-	RegConsoleCmd("sm_record", Panel_Record_Main, "Record");
+	RegConsoleCmd("sm_record", Panel_Record_Main, "Toggle client demo recording plugin");
 	HookEvent("game_round_start", Event_RoundStart);
 }
 
-public void OnClientPutInServer(int client)
+public void OnClientDisconnect(int client)
 {
-	if (IsRecording[client])
-	{
-		StartRecord(client);
-	}
-
-	else
-	{
-		highlightXPThreshold[client] = HIGHLIGHT_THRESHOLD_DEFAULT;
-	}
+	highlightXPThreshold[client] = HIGHLIGHT_THRESHOLD_DEFAULT;
+	IsRecording[client] = false;
 }
 
 public void OnMapEnd()
@@ -93,7 +86,6 @@ public void OnMapEnd()
 				// This would mess up map names in file names etc.
 				ClientCommand(i, "stop");
 			}
-			IsRecording[i] = false;
 		}
 	}
 }
