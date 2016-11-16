@@ -35,13 +35,13 @@ new const String:g_sMenuSoundCancel[] = "buttons/combine_button7.wav";
 char g_sRandomID[MAXPLAYERS+1][10];
 char g_sReplayFile[MAXPLAYERS+1][100];
 
-bool g_bIsRecording[MAXPLAYERS+1];
 bool g_bIsEditingXPThreshold[MAXPLAYERS+1];
+bool g_bIsRecording[MAXPLAYERS+1];
 
 int g_iClientTotalXP[MAXPLAYERS+1] = 0;
 int g_iHighlightXPThreshold[MAXPLAYERS+1] = HIGHLIGHT_THRESHOLD_DEFAULT;
-int g_iRoundCount;
 int g_iPreference[MAXPLAYERS+1] = PREF_ALL_ROUNDS;
+int g_iRoundCount;
 
 public Plugin myinfo =
 {
@@ -60,7 +60,10 @@ public void OnPluginStart()
 
 public void OnClientDisconnect(int client)
 {
+	g_iClientTotalXP[client] = 0;
 	g_iHighlightXPThreshold[client] = HIGHLIGHT_THRESHOLD_DEFAULT;
+	g_iPreference = PREF_ALL_ROUNDS;
+
 	g_bIsEditingXPThreshold[client] = false;
 	g_bIsRecording[client] = false;
 }
