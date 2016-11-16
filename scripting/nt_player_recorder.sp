@@ -9,7 +9,8 @@
 enum {
 	PREF_WHOLE_MAPS = 1,
 	PREF_HIGHLIGHTS,
-	PREF_ALL_ROUNDS
+	PREF_ALL_ROUNDS,
+	PREF_ENUM_COUNT
 };
 
 enum {
@@ -64,6 +65,7 @@ public void OnPluginStart()
 public void OnClientDisconnect(int client)
 {
 	highlightXPThreshold[client] = HIGHLIGHT_THRESHOLD_DEFAULT;
+	IsEditingXPThreshold[client] = false;
 	IsRecording[client] = false;
 }
 
@@ -286,31 +288,22 @@ public PanelHandler_Preferences(Handle menu, MenuAction action, int client, int 
 
 public PanelHandler_Preferences_Edit(Handle menu, MenuAction action, int client, int choice)
 {
-	if (action == MenuAction_Select)
+	if (action != MenuAction_Select)
+		return;
+
+	if (choice > PREF_ENUM_COUNT)
 	{
-		if (choice == 1) // Record whole maps
-		{
-			g_preference[client] = PREF_WHOLE_MAPS;
-		}
-
-		else if (choice == 2) // Record highlights
-		{
-			g_preference[client] = PREF_HIGHLIGHTS;
-		}
-
-		else if (choice == 3) // Record rounds separately
-		{
-			g_preference[client] = PREF_ALL_ROUNDS;
-		}
-
-		if (choice < 4)
-			EmitSoundToClient(client, g_menuSoundOk);
-
-		else // Go back
-			EmitSoundToClient(client, g_menuSoundCancel);
-
-		Command_ConfigureRecord(client, PANEL_CHOICE_MODE);
+		PrecacheSound(g_menuSoundCancel);
+		EmitSoundToClient(client, g_menuSoundCancel);
 	}
+	else
+	{
+		g_preference[client] = choice;
+		PrecacheSound(g_menuSoundOk);
+		EmitSoundToClient(client, g_menuSoundOk);
+	}
+
+	Command_ConfigureRecord(client, PANEL_CHOICE_MODE);
 }
 
 public PanelHandler_HighlightCriteria(Handle menu, MenuAction action, int client, int choice)
