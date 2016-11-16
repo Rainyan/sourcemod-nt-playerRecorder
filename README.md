@@ -2,10 +2,12 @@
 
 SourceMod plugin that will automatically record clientside demo replays with automatic naming and some other features.
 
-Commands: <i>sm_record</i> – Record menu
+Commands:
+* _sm_record_ – Record menu
+* _sm_rec_ - Shorthand for the record menu
 
 ### Compile dependencies
-* SourceMod <a target="_blank" href="https://github.com/softashell/sourcemod-nt-include">Neotokyo include</a>
+* SourceMod [Neotokyo include](https://github.com/softashell/sourcemod-nt-include)
 
 ### Server dependencies
 * SourceMod 1.7 or newer
