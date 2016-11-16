@@ -78,14 +78,6 @@ bool IsValidClient(int client)
 	return false;
 }
 
-bool IsValidAdmin(int client)
-{
-	if (IsValidClient(client) && CheckCommandAccess(client, "sm_kick", ADMFLAG_KICK))
-		return true;
-
-	return false;
-}
-
 public Action Event_RoundStart(Handle event, const char[] Name, bool dontBroadcast)
 {
 	if (roundCount != 0)
