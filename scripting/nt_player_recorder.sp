@@ -75,7 +75,7 @@ public void OnMapEnd()
 
 	for (new i = 1; i <= MaxClients; i++)
 	{
-		if (!IsValidClient(i))
+		if (!IsValidClient(i) || IsFakeClient(i))
 			continue;
 
 		if (IsRecording[i])
@@ -92,18 +92,20 @@ public void OnMapEnd()
 
 public Action Event_RoundStart(Handle event, const char[] Name, bool dontBroadcast)
 {
-	if (roundCount != 0)
+	if (roundCount > 0)
 	{
 		roundCount++;
 	}
-	else // Deduce round count from team scores, in case we got loaded mid game. This ignores ties but oh well.
+	// Deduce round count from team scores if plugin was loaded mid game.
+	// This ignores ties but gives some context for replay naming.
+	else
 	{
-		roundCount += GetTeamScore(2) + GetTeamScore(3);
+		roundCount += GetTeamScore(TEAM_JINRAI) + GetTeamScore(TEAM_NSF);
 	}
 
 	for (int i = 1; i <= MaxClients; i++)
 	{
-		if (!IsValidClient(i) || !IsRecording[i])
+		if (!IsRecording[i] || !IsValidClient(i) || IsFakeClient(i))
 			continue;
 
 		if (g_preference[i] == PREF_ALL_ROUNDS || g_preference[i] == PREF_HIGHLIGHTS)
@@ -113,40 +115,35 @@ public Action Event_RoundStart(Handle event, const char[] Name, bool dontBroadca
 	}
 }
 
-public Action StartRecord(int client)
+void StartRecord(int client)
 {
 	if (!IsValidClient(client))
 	{
-		LogError("[%s] Invalid client %i attempted to StartRecord()", g_tag, client);
-		return Plugin_Stop;
+		ThrowError("[%s] Invalid client %i attempted to StartRecord()", g_tag, client);
 	}
-
 	if (!IsRecording[client])
 	{
-		LogError("[%s] Client %i reached StartRecord() even though IsRecording[client] = false", g_tag, client);
-		return Plugin_Stop;
+		ThrowError("[%s] Client %i reached StartRecord() even though \
+IsRecording[client] = false", g_tag, client);
 	}
 
 	char mapName[64];
 	GetCurrentMap(mapName, sizeof(mapName));
 
-	char date[11];
-	FormatTime(date, sizeof(date), "%Y-%m-%d");
-
-	char time[6];
-	FormatTime(time, sizeof(time), "%H-%M");
+	char time[18];
+	FormatTime(time, sizeof(time), "%Y-%m-%d_%H-%M");
 
 	GenerateRandomID(client);
 
-	char commandBuffer[26 + sizeof(date) + sizeof(time) + sizeof(mapName) + sizeof(roundCount) + sizeof(g_randomID)];
+	char commandBuffer[25 + sizeof(time) + sizeof(mapName) + sizeof(roundCount) + sizeof(g_randomID)];
 
 	if (g_preference[client] == PREF_ALL_ROUNDS) // Record every round separately
 	{
 		if (roundCount < 1)
-			Format(commandBuffer, sizeof(commandBuffer), "record auto_%s_time-%s_%s_warmup", date, time, mapName);
+			Format(commandBuffer, sizeof(commandBuffer), "record auto_%s_time-%s_warmup", time, mapName);
 
 		else
-			Format(commandBuffer, sizeof(commandBuffer), "record auto_%s_time-%s_%s_round-%i", date, time, mapName, roundCount);
+			Format(commandBuffer, sizeof(commandBuffer), "record auto_%s_time-%s_round-%i", time, mapName, roundCount);
 
 		ReplaceString(commandBuffer, sizeof(commandBuffer), "record ", "");
 		strcopy(g_replayFile[client], sizeof(g_replayFile), commandBuffer);
@@ -154,7 +151,7 @@ public Action StartRecord(int client)
 
 	else if (g_preference[client] == PREF_WHOLE_MAPS) // Record whole maps
 	{
-		Format(commandBuffer, sizeof(commandBuffer), "record auto_%s_%s_%s", date, mapName, g_randomID[client]);
+		Format(commandBuffer, sizeof(commandBuffer), "record auto_%s_%s_%s", time, mapName, g_randomID[client]);
 		strcopy(g_replayFile[client], sizeof(g_replayFile), commandBuffer);
 	}
 
@@ -164,7 +161,7 @@ public Action StartRecord(int client)
 
 		if (gainedXP >= highlightXPThreshold[client] || strlen(g_replayFile[client]) < 1)
 		{
-			Format(commandBuffer, sizeof(commandBuffer), "record auto_%s_%s_%s", date, mapName, g_randomID[client]);
+			Format(commandBuffer, sizeof(commandBuffer), "record auto_%s_%s_%s", time, mapName, g_randomID[client]);
 			strcopy(g_replayFile[client], sizeof(g_replayFile), commandBuffer);
 		}
 
@@ -193,8 +190,6 @@ public Action StartRecord(int client)
 		PrintToChat(client, "Started new record"); // Debug
 		PrintToConsole(client, "Command: %s", commandBuffer); // Debug
 	}
-
-	return Plugin_Handled;
 }
 
 public Action Panel_Record_Main(int client, int args)
