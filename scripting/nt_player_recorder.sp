@@ -377,79 +377,76 @@ public Action SayCallback_XPThreshold(int client, const char[] command, int argc
 	return Plugin_Stop;
 }
 
-public Action Command_ConfigureRecord(int client, int choice)
+void Command_ConfigureRecord(int client, int choice)
 {
-	if (choice == 1) // Toggle recording
+	switch (choice)
 	{
-		if (IsRecording[client])
+		case PANEL_CHOICE_RECORD:
 		{
-			ClientCommand(client, "stop");
-			PrintToChat(client, "[%s] Stopped recording.", g_tag);
-			IsRecording[client] = false;
-			Panel_Record_Main(client, 1);
+			if (IsRecording[client])
+			{
+				ClientCommand(client, "stop");
+				PrintToChat(client, "[%s] Stopped recording.", g_tag);
+				IsRecording[client] = false;
+				Panel_Record_Main(client, 1);
+			}
+
+			else
+			{
+				IsRecording[client] = true;
+				StartRecord(client);
+				Panel_Record_Main(client, 2);
+			}
 		}
 
-		else
+		case PANEL_CHOICE_MODE:
 		{
-			IsRecording[client] = true;
-			StartRecord(client);
-			Panel_Record_Main(client, 2);
+			Handle panel = CreatePanel();
+			SetPanelTitle(panel, "Recording preferences");
+
+			DrawPanelText(panel, " ");
+			char prefBuffer[128];
+
+			if (g_preference[client] == PREF_WHOLE_MAPS)
+			{
+				Format(prefBuffer, sizeof(prefBuffer), "Recording mode: %s", g_prefWholeMaps);
+			}
+			else if (g_preference[client] == PREF_HIGHLIGHTS)
+			{
+				Format(prefBuffer, sizeof(prefBuffer), "Recording mode: %s", g_prefHighlights);
+			}
+			else
+			{
+				Format(prefBuffer, sizeof(prefBuffer), "Recording mode: %s", g_prefAllRounds);
+			}
+
+			DrawPanelText(panel, prefBuffer);
+			DrawPanelText(panel, " ");
+			DrawPanelItem(panel, "Change behaviour");
+			DrawPanelItem(panel, "Back");
+
+			SendPanelToClient(panel, client, PanelHandler_Preferences, 20);
+			CloseHandle(panel);
+		}
+
+		case PANEL_CHOICE_CRITERIA:
+		{
+			Handle panel = CreatePanel();
+
+			SetPanelTitle(panel, "Edit highlight mode criteria");
+			DrawPanelText(panel, " ");
+
+			char buffer[128];
+			Format(buffer, sizeof(buffer), "Current threshold for keeping a round replay: %i XP", highlightXPThreshold[client]);
+			DrawPanelText(panel, buffer);
+			DrawPanelText(panel, " ");
+			DrawPanelItem(panel, "Edit XP threshold for saving a round replay");
+			DrawPanelItem(panel, "Back");
+
+			SendPanelToClient(panel, client, PanelHandler_HighlightCriteria, 20);
+			CloseHandle(panel);
 		}
 	}
-
-	else if (choice == 2) // Recording preferences
-	{
-		Handle panel = CreatePanel();
-		SetPanelTitle(panel, "Recording preferences");
-
-		DrawPanelText(panel, " ");
-
-		char prefBuffer[128];
-
-		if (g_preference[client] == PREF_WHOLE_MAPS)
-			Format(prefBuffer, sizeof(prefBuffer), "Recording mode: %s", g_prefWholeMaps);
-
-		else if (g_preference[client] == PREF_HIGHLIGHTS)
-			Format(prefBuffer, sizeof(prefBuffer), "Recording mode: %s", g_prefHighlights);
-
-		else
-			Format(prefBuffer, sizeof(prefBuffer), "Recording mode: %s", g_prefAllRounds);
-
-		DrawPanelText(panel, prefBuffer);
-
-		DrawPanelText(panel, " ");
-
-		DrawPanelItem(panel, "Change behaviour");
-
-		DrawPanelItem(panel, "Back");
-
-		SendPanelToClient(panel, client, PanelHandler_Preferences, 20);
-
-		CloseHandle(panel);
-	}
-
-	else if (choice == 3) // Edit highlight mode criteria (XP)
-	{
-		Handle panel = CreatePanel();
-		SetPanelTitle(panel, "Edit highlight mode criteria");
-
-		DrawPanelText(panel, " ");
-
-		char buffer[128];
-		Format(buffer, sizeof(buffer), "Current threshold for keeping a round replay: %i XP", highlightXPThreshold[client]);
-		DrawPanelText(panel, buffer);
-
-		DrawPanelText(panel, " ");
-
-		DrawPanelItem(panel, "Edit XP threshold for saving a round replay");
-		DrawPanelItem(panel, "Back");
-
-		SendPanelToClient(panel, client, PanelHandler_HighlightCriteria, 20);
-
-		CloseHandle(panel);
-	}
-
-	return Plugin_Handled;
 }
 
 void GenerateRandomID(int client)
