@@ -69,7 +69,7 @@ public void OnMapEnd()
 {
 	g_iRoundCount = 0;
 
-	for (new i = 1; i <= MaxClients; i++)
+	for (int i = 1; i <= MaxClients; i++)
 	{
 		if (!IsValidClient(i) || IsFakeClient(i))
 			continue;
@@ -133,40 +133,52 @@ g_bIsRecording[client] = false", g_sTag, client);
 
 	char commandBuffer[25 + sizeof(time) + sizeof(mapName) + sizeof(g_iRoundCount) + sizeof(g_sRandomID)];
 
-	if (g_iPreference[client] == PREF_ALL_ROUNDS) // Record every round separately
+	switch (g_iPreference[client])
 	{
-		if (g_iRoundCount < 1)
-			Format(commandBuffer, sizeof(commandBuffer), "record auto_%s_time-%s_warmup", time, mapName);
-
-		else
-			Format(commandBuffer, sizeof(commandBuffer), "record auto_%s_time-%s_round-%i", time, mapName, g_iRoundCount);
-
-		ReplaceString(commandBuffer, sizeof(commandBuffer), "record ", "");
-		strcopy(g_sReplayFile[client], sizeof(g_sReplayFile), commandBuffer);
-	}
-
-	else if (g_iPreference[client] == PREF_WHOLE_MAPS) // Record whole maps
-	{
-		Format(commandBuffer, sizeof(commandBuffer), "record auto_%s_%s_%s", time, mapName, g_sRandomID[client]);
-		strcopy(g_sReplayFile[client], sizeof(g_sReplayFile), commandBuffer);
-	}
-
-	else // Record only highlights, overwrite "boring" stuff by using the same record name. Experimental.
-	{
-		int gainedXP = GetEntProp(client, Prop_Data, "m_iFrags") - g_iClientTotalXP[client];
-
-		if (gainedXP >= g_iHighlightXPThreshold[client] || strlen(g_sReplayFile[client]) < 1)
+		// Record every round separately
+		case PREF_ALL_ROUNDS:
 		{
-			Format(commandBuffer, sizeof(commandBuffer), "record auto_%s_%s_%s", time, mapName, g_sRandomID[client]);
+			if (g_iRoundCount < 1)
+			{
+				Format(commandBuffer, sizeof(commandBuffer),
+					"record auto_%s_time-%s_warmup", time, mapName);
+			}
+			else
+			{
+				Format(commandBuffer, sizeof(commandBuffer),
+					"record auto_%s_time-%s_round-%i", time, mapName, g_iRoundCount);
+			}
+
+			ReplaceString(commandBuffer, sizeof(commandBuffer), "record ", "");
 			strcopy(g_sReplayFile[client], sizeof(g_sReplayFile), commandBuffer);
 		}
-
-		else
+		// Record whole maps
+		case PREF_WHOLE_MAPS:
 		{
-			PrintToConsole(client, "%s Got %i XP last round while threshold is %i. Overwriting %s.dem.", g_sTag, gainedXP, g_iHighlightXPThreshold[client], g_sReplayFile[client]);
+			Format(commandBuffer, sizeof(commandBuffer),
+				"record auto_%s_%s_%s", time, mapName, g_sRandomID[client]);
+			strcopy(g_sReplayFile[client], sizeof(g_sReplayFile), commandBuffer);
 		}
-
-		g_iClientTotalXP[client] += gainedXP;
+		// Record only highlights, overwrite "boring" stuff
+		// by using the same record name. Experimental.
+		case PREF_HIGHLIGHTS:
+		{
+			int gainedXP = GetEntProp(client, Prop_Data, "m_iFrags") - g_iClientTotalXP[client];
+			if (gainedXP >= g_iHighlightXPThreshold[client] ||
+					strlen(g_sReplayFile[client]) < 1)
+			{
+				Format(commandBuffer, sizeof(commandBuffer), "record auto_%s_%s_%s",
+					time, mapName, g_sRandomID[client]);
+				strcopy(g_sReplayFile[client], sizeof(g_sReplayFile), commandBuffer);
+			}
+			else
+			{
+				PrintToConsole(client, "%s Got %i XP last round while threshold is %i. \
+Overwriting %s.dem.",
+g_sTag, gainedXP, g_iHighlightXPThreshold[client], g_sReplayFile[client]);
+			}
+			g_iClientTotalXP[client] += gainedXP;
+		}
 	}
 
 #if defined DEBUG
@@ -174,8 +186,11 @@ g_bIsRecording[client] = false", g_sTag, client);
 		PrintToChat(client, "Started new record");
 		PrintToConsole(client, "Command: %s", commandBuffer);
 #else
-		ClientCommand(client, "stop"); // Stop possible previous recording. Does nothing if there wasn't a recording running.
-		ClientCommand(client, commandBuffer); // Start new recording.
+		// Stop possible previous recording.
+		// This does nothing if there wasn't a recording running.
+		ClientCommand(client, "stop");
+		// Start new recording.
+		ClientCommand(client, commandBuffer);
 #endif
 }
 
