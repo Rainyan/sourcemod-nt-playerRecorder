@@ -63,37 +63,6 @@ public void OnPluginStart()
 	HookEvent("game_round_start", Event_RoundStart);
 }
 
-bool Contains(const char[] haystack, const char[] needle)
-{
-	if (StrContains(haystack, needle, false) != -1)
-		return true;
-
-	return false;
-}
-
-public Action Event_RoundStart(Handle event, const char[] Name, bool dontBroadcast)
-{
-	if (roundCount != 0)
-	{
-		roundCount++;
-	}
-	else // Deduce round count from team scores, in case we got loaded mid game. This ignores ties but oh well.
-	{
-		roundCount += GetTeamScore(2) + GetTeamScore(3);
-	}
-
-	for (int i = 1; i <= MaxClients; i++)
-	{
-		if (!IsValidClient(i) || !IsRecording[i])
-			continue;
-
-		if (g_preference[i] == PREF_ALL_ROUNDS || g_preference[i] == PREF_HIGHLIGHTS)
-		{
-			StartRecord(i);
-		}
-	}
-}
-
 public void OnClientPutInServer(int client)
 {
 	if (IsRecording[client])
@@ -118,6 +87,29 @@ public void OnMapEnd()
 
 		if (IsRecording[i])
 			ClientCommand(i, "stop"); // Stop recording, so the game doesn't autoincrement filenames (this would mess up map names in file names etc.)
+	}
+}
+
+public Action Event_RoundStart(Handle event, const char[] Name, bool dontBroadcast)
+{
+	if (roundCount != 0)
+	{
+		roundCount++;
+	}
+	else // Deduce round count from team scores, in case we got loaded mid game. This ignores ties but oh well.
+	{
+		roundCount += GetTeamScore(2) + GetTeamScore(3);
+	}
+
+	for (int i = 1; i <= MaxClients; i++)
+	{
+		if (!IsValidClient(i) || !IsRecording[i])
+			continue;
+
+		if (g_preference[i] == PREF_ALL_ROUNDS || g_preference[i] == PREF_HIGHLIGHTS)
+		{
+			StartRecord(i);
+		}
 	}
 }
 
@@ -690,4 +682,12 @@ void GenerateRandomID(int client)
 		// Concatenate a random character from the array one at a time
 		StrCat(g_randomID[client], sizeof(g_randomID), charArray[GetRandomInt(0, 61)]);
 	}
+}
+
+bool Contains(const char[] haystack, const char[] needle)
+{
+	if (StrContains(haystack, needle, false) != -1)
+		return true;
+
+	return false;
 }
