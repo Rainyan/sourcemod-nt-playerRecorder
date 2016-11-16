@@ -5,6 +5,7 @@
 #include <neotokyo>
 
 #define PLUGIN_VERSION "0.1"
+//#define DEBUG
 
 enum {
 	PREF_WHOLE_MAPS = 1,
@@ -38,7 +39,6 @@ char g_randomID[MAXPLAYERS+1][10];
 char g_replayFile[MAXPLAYERS+1][100];
 
 // Global booleans
-bool debugMode = false;
 bool IsRecording[MAXPLAYERS+1];
 bool IsEditingXPThreshold[MAXPLAYERS+1];
 
@@ -174,23 +174,14 @@ IsRecording[client] = false", g_tag, client);
 		clientTotalXP[client] += gainedXP;
 	}
 
-	//PrintToChat(client, "[%s] Recording to %s.dem...", g_tag, g_replayFile[client]); // debug
-	//PrintToConsole(client, "[%s] Recording to %s.dem...", g_tag, g_replayFile[client]); // debug
-
-	if (debugMode)
-	{
-		PrintToChat(client, "Record: %s", commandBuffer); // Debug
-		PrintToConsole(client, "Command: %s", commandBuffer); // Debug
-	}
-
-	if (!debugMode)
-	{
+#if defined DEBUG
+		PrintToServer("[%s] Recording to %s.dem...", g_tag, g_replayFile[client]);
+		PrintToChat(client, "Started new record");
+		PrintToConsole(client, "Command: %s", commandBuffer);
+#else
 		ClientCommand(client, "stop"); // Stop possible previous recording. Does nothing if there wasn't a recording running.
 		ClientCommand(client, commandBuffer); // Start new recording.
-
-		PrintToChat(client, "Started new record"); // Debug
-		PrintToConsole(client, "Command: %s", commandBuffer); // Debug
-	}
+#endif
 }
 
 public Action Panel_Record_Main(int client, int args)
