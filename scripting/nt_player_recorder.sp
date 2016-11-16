@@ -27,8 +27,7 @@ enum {
 char g_prefWholeMaps[] = "Record whole maps";
 char g_prefHighlights[] = "Record highlights (experimental)";
 char g_prefAllRounds[] = "Record each round separately";
-char g_tag[] = "RECORD";
-char g_githubUrl[] = "https://github.com/Rainyan/sourcemod-nt-playerRecorder";
+char g_tag[] = "[REC]";
 
 // Button sounds
 char g_menuSoundOk[] = "buttons/button14.wav";
@@ -54,7 +53,7 @@ public Plugin myinfo =
 	author = "Rain",
 	description = "Clientside demo replay recorder",
 	version = PLUGIN_VERSION,
-	url = g_githubUrl
+	url = "https://github.com/Rainyan/sourcemod-nt-playerRecorder"
 };
 
 public void OnPluginStart()
@@ -120,11 +119,11 @@ void StartRecord(int client)
 {
 	if (!IsValidClient(client))
 	{
-		ThrowError("[%s] Invalid client %i attempted to StartRecord()", g_tag, client);
+		ThrowError("%s Invalid client %i attempted to StartRecord()", g_tag, client);
 	}
 	if (!IsRecording[client])
 	{
-		ThrowError("[%s] Client %i reached StartRecord() even though \
+		ThrowError("%s Client %i reached StartRecord() even though \
 IsRecording[client] = false", g_tag, client);
 	}
 
@@ -168,14 +167,14 @@ IsRecording[client] = false", g_tag, client);
 
 		else
 		{
-			PrintToConsole(client, "[%s] Got %i XP last round while threshold is %i. Overwriting %s.dem.", g_tag, gainedXP, highlightXPThreshold[client], g_replayFile[client]);
+			PrintToConsole(client, "%s Got %i XP last round while threshold is %i. Overwriting %s.dem.", g_tag, gainedXP, highlightXPThreshold[client], g_replayFile[client]);
 		}
 
 		clientTotalXP[client] += gainedXP;
 	}
 
 #if defined DEBUG
-		PrintToServer("[%s] Recording to %s.dem...", g_tag, g_replayFile[client]);
+		PrintToServer("%s Recording to %s.dem...", g_tag, g_replayFile[client]);
 		PrintToChat(client, "Started new record");
 		PrintToConsole(client, "Command: %s", commandBuffer);
 #else
@@ -310,7 +309,7 @@ public PanelHandler_HighlightCriteria(Handle menu, MenuAction action, int client
 		if (choice == 1)
 		{
 			EmitSoundToClient(client, g_menuSoundOk);
-			PrintToChat(client, "[%s] Please type the XP threshold in the chat. Type \"cancel\" to cancel.", g_tag);
+			PrintToChat(client, "%s Please type the XP threshold in the chat. Type \"cancel\" to cancel.", g_tag);
 			IsEditingXPThreshold[client] = true;
 			AddCommandListener(SayCallback_XPThreshold, "say");
 			AddCommandListener(SayCallback_XPThreshold, "say_team");
@@ -337,7 +336,7 @@ public Action SayCallback_XPThreshold(int client, const char[] command, int argc
 
 	if (Contains(message, "cancel"))
 	{
-		PrintToChat(client, "[%s] Cancelled editing the XP threshold.", g_tag);
+		PrintToChat(client, "%s Cancelled editing the XP threshold.", g_tag);
 		RemoveCommandListener(SayCallback_XPThreshold, "say");
 		RemoveCommandListener(SayCallback_XPThreshold, "say_team");
 		IsEditingXPThreshold[client] = false;
@@ -348,7 +347,7 @@ public Action SayCallback_XPThreshold(int client, const char[] command, int argc
 
 	if (threshold < 0)
 	{
-		PrintToChat(client, "[%s] Please insert a positive integer value.", g_tag);
+		PrintToChat(client, "%s Please insert a positive integer value.", g_tag);
 		PrintToChat(client, "Type \"cancel\" to stop editing the threshold.");
 		return Plugin_Stop;
 	}
@@ -360,7 +359,7 @@ public Action SayCallback_XPThreshold(int client, const char[] command, int argc
 	RemoveCommandListener(SayCallback_XPThreshold, "say");
 	RemoveCommandListener(SayCallback_XPThreshold, "say_team");
 
-	PrintToChat(client, "[%s] Threshold has been changed to %i XP.", g_tag, threshold);
+	PrintToChat(client, "%s Threshold has been changed to %i XP.", g_tag, threshold);
 
 	Command_ConfigureRecord(client, 3); // Draw the XP edit panel again.
 
@@ -376,7 +375,7 @@ void Command_ConfigureRecord(int client, int choice)
 			if (IsRecording[client])
 			{
 				ClientCommand(client, "stop");
-				PrintToChat(client, "[%s] Stopped recording.", g_tag);
+				PrintToChat(client, "%s Stopped recording.", g_tag);
 				IsRecording[client] = false;
 				Panel_Record_Main(client, 1);
 			}
