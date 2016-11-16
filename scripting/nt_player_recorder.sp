@@ -15,8 +15,7 @@ enum {
 enum {
 	PANEL_CHOICE_RECORD = 1,
 	PANEL_CHOICE_MODE,
-	PANEL_CHOICE_CRITERIA,
-	PANEL_CHOICE_HELP
+	PANEL_CHOICE_CRITERIA
 };
 
 #define HIGHLIGHT_THRESHOLD_DEFAULT 4
@@ -25,7 +24,6 @@ enum {
 char g_prefWholeMaps[] = "Record whole maps";
 char g_prefHighlights[] = "Record highlights (experimental)";
 char g_prefAllRounds[] = "Record each round separately";
-char g_divider[] = "=====";
 char g_tag[] = "RECORD";
 char g_githubUrl[] = "https://github.com/Rainyan/sourcemod-nt-playerRecorder";
 
@@ -194,33 +192,27 @@ IsRecording[client] = false", g_tag, client);
 
 public Action Panel_Record_Main(int client, int args)
 {
-	/*
-	// jic switch if all goes to hell
-	if (!IsValidAdmin(client))
-	{
-		PrintToChat(client, "[SM] Sorry, this is a work in progress, and doesn't work properly yet. Access limited for now.");
-		return Plugin_Stop;
-	}
-	*/
-
 	Handle panel = CreatePanel();
 	SetPanelTitle(panel, "Automatic Round Recorder");
-
 	DrawPanelText(panel, " ");
 
 	char prefBuffer[128];
 	if (g_preference[client] == PREF_WHOLE_MAPS)
+	{
 		Format(prefBuffer, sizeof(prefBuffer), "Recording mode: %s", g_prefWholeMaps);
-
+	}
 	else if (g_preference[client] == PREF_HIGHLIGHTS)
+	{
 		Format(prefBuffer, sizeof(prefBuffer), "Recording mode: %s", g_prefHighlights);
-
+	}
 	else
+	{
 		Format(prefBuffer, sizeof(prefBuffer), "Recording mode: %s", g_prefAllRounds);
+	}
 
 	if (IsRecording[client])
 	{
-		new String:buffer[128];
+		char buffer[128];
 		Format(buffer, sizeof(buffer), "Currently recording: %s.dem", g_replayFile[client]);
 
 		DrawPanelText(panel, buffer);
@@ -228,7 +220,6 @@ public Action Panel_Record_Main(int client, int args)
 		DrawPanelText(panel, " ");
 		DrawPanelItem(panel, "Stop recording");
 	}
-
 	else
 	{
 		DrawPanelText(panel, "Not recording.");
@@ -238,119 +229,14 @@ public Action Panel_Record_Main(int client, int args)
 	}
 
 	DrawPanelItem(panel, "Edit recording behaviour");
-
 	DrawPanelItem(panel, "Edit highlight mode criteria");
-
 	DrawPanelItem(panel, "Help");
-
 	DrawPanelItem(panel, "Exit");
 
 	SendPanelToClient(panel, client, PanelHandler_Main, 20);
-
 	CloseHandle(panel);
 
 	return Plugin_Handled;
-}
-
-public Action Panel_Record_Help(int client, int choice)
-{
-	Handle panel = CreatePanel();
-
-	if (choice == 1) // "What does this plugin do?"
-	{
-		SetPanelTitle(panel, "What does this plugin do?");
-		DrawPanelText(panel, " ");
-		DrawPanelText(panel, "This plugin will automatically record your gameplay");
-		DrawPanelText(panel, "into Source replay files. These files are");
-		DrawPanelText(panel, "relatively small and have a minimal impact on");
-		DrawPanelText(panel, "game performance.");
-		DrawPanelText(panel, " ");
-		DrawPanelText(panel, "You can also manually record these files with");
-		DrawPanelText(panel, "the console command \"record filename\", but");
-		DrawPanelText(panel, "this plugin will take care of that for you,");
-		DrawPanelText(panel, "including naming the replays descriptively.");
-		DrawPanelText(panel, " ");
-		DrawPanelText(panel, "You can access the replay player by pressing");
-		DrawPanelText(panel, "Shift+F2 in Neotokyo.");
-		/* This won't fit, need multi page panel if we want to include it.
-		DrawPanelText(panel, " ");
-		DrawPanelText(panel, "The .dem replay files themselves are located at");
-		DrawPanelText(panel, "Steam/SteamApps/common/NEOTOKYO/NeotokyoSource.");
-		*/
-	}
-
-	else if (choice == 2) // "How does the highlights mode work?"
-	{
-		SetPanelTitle(panel, "How does the highlights mode work?");
-		DrawPanelText(panel, " ");
-		DrawPanelText(panel, "The highlights mode is experimental.");
-		DrawPanelText(panel, "It tries to only save the interesting rounds.");
-		DrawPanelText(panel, "Currently, it only takes the gained XP in count.");
-		DrawPanelText(panel, "You probably want to use the \"record whole maps\"");
-		DrawPanelText(panel, "mode instead, if you're worried about losing good");
-		DrawPanelText(panel, "replays.");
-		DrawPanelText(panel, " ");
-		DrawPanelText(panel, "If you have suggestions on improving the");
-		DrawPanelText(panel, "algorithm, please poke Rain.");
-	}
-
-	else if (choice == 3) // "I have a feature request!"
-	{
-		SetPanelTitle(panel, "I have a feature request! I found a bug!");
-		DrawPanelText(panel, " ");
-		DrawPanelText(panel, "This plugin is open source. You can contribute at:");
-		DrawPanelText(panel, g_githubUrl);
-		PrintToConsole(client, "%s\n[%s] Auto recorder project url: %s", g_divider, g_tag, g_githubUrl);
-
-		Handle serverIP = FindConVar("hostip");
-		char serverIPBuffer[128];
-		GetConVarString(serverIP, serverIPBuffer, sizeof(serverIPBuffer));
-
-		if (!Contains(serverIPBuffer, "108.61.116.38"))
-		{
-			DrawPanelText(panel, "You can also directly send suggestions to Rain:");
-			DrawPanelText(panel, "http://steamcommunity.com/id/uminari");
-			PrintToConsole(client, "[%s] Rain's profile url: http://steamcommunity.com/id/uminari\n%s", g_tag, g_divider);
-			DrawPanelText(panel, "These urls were also copied to your console for your convenience.");
-		}
-
-		else // We're at Rain's server, so we can just advertise the !feedback command instead
-		{
-			DrawPanelText(panel, "You can also send suggestions by typing");
-			DrawPanelText(panel, "!feedback, followed by your ideas on this");
-			DrawPanelText(panel, "server's chat.");
-		}
-
-		CloseHandle(serverIP);
-	}
-
-	else if (choice == 4) // "Where can I get this plugin?"
-	{
-		SetPanelTitle(panel, "Where can I get this plugin?");
-		DrawPanelText(panel, " ");
-		DrawPanelText(panel, "This plugin is open source. If you're a server operator,");
-		DrawPanelText(panel, "you can find the source code at:");
-		DrawPanelText(panel, g_githubUrl);
-		PrintToConsole(client, "%s\n[%s] Auto recorder project url: %s\n%s", g_divider, g_tag, g_githubUrl, g_divider);
-		DrawPanelText(panel, "The url was also copied to your console for your convenience.");
-	}
-
-	DrawPanelText(panel, " ");
-	DrawPanelItem(panel, "Back");
-
-	SendPanelToClient(panel, client, PanelHandler_Help_Explanation, 120);
-	CloseHandle(panel);
-
-	return Plugin_Handled;
-}
-
-public PanelHandler_Help_Explanation(Handle menu, MenuAction action, int client, int choice)
-{
-	if (action == MenuAction_Select)
-	{
-		EmitSoundToClient(client, g_menuSoundCancel);
-		Command_ConfigureRecord(client, PANEL_CHOICE_HELP);
-	}
 }
 
 public PanelHandler_Main(Handle menu, MenuAction action, int client, int choice)
@@ -424,24 +310,6 @@ public PanelHandler_Preferences_Edit(Handle menu, MenuAction action, int client,
 			EmitSoundToClient(client, g_menuSoundCancel);
 
 		Command_ConfigureRecord(client, PANEL_CHOICE_MODE);
-	}
-}
-
-public PanelHandler_Help(Handle menu, MenuAction action, int client, int choice)
-{
-	if (action == MenuAction_Select)
-	{
-		if (choice < 5) // Selection other than "back"
-		{
-			EmitSoundToClient(client, g_menuSoundOk);
-			Panel_Record_Help(client, choice);
-		}
-
-		else // Go back
-		{
-			EmitSoundToClient(client, g_menuSoundCancel);
-			Panel_Record_Main(client, 1);
-		}
 	}
 }
 
@@ -577,24 +445,6 @@ public Action Command_ConfigureRecord(int client, int choice)
 		DrawPanelItem(panel, "Back");
 
 		SendPanelToClient(panel, client, PanelHandler_HighlightCriteria, 20);
-
-		CloseHandle(panel);
-	}
-
-	else if (choice == 4) // Show help
-	{
-		Handle panel = CreatePanel();
-		SetPanelTitle(panel, "Help");
-
-		DrawPanelText(panel, " ");
-
-		DrawPanelItem(panel, "What does this do?");
-		DrawPanelItem(panel, "How does the highlights mode work?");
-		DrawPanelItem(panel, "I have a feature request! I found a bug!");
-		DrawPanelItem(panel, "Where can I get this plugin?");
-		DrawPanelItem(panel, "Back");
-
-		SendPanelToClient(panel, client, PanelHandler_Help, 20);
 
 		CloseHandle(panel);
 	}
