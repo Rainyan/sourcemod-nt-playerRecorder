@@ -23,29 +23,25 @@ enum {
 
 #define HIGHLIGHT_THRESHOLD_DEFAULT 4
 
-// Global strings we use in a bunch of menus
-char g_prefWholeMaps[] = "Record whole maps";
-char g_prefHighlights[] = "Record highlights (experimental)";
-char g_prefAllRounds[] = "Record each round separately";
-char g_tag[] = "[REC]";
+// TODO: translation phrases
+char g_sPrefWholeMaps[] = "Record whole maps";
+char g_sPrefHighlights[] = "Record highlights (experimental)";
+char g_sPrefAllRounds[] = "Record each round separately";
+char g_sTag[] = "[REC]";
 
-// Button sounds
-char g_menuSoundOk[] = "buttons/button14.wav";
-char g_menuSoundCancel[] = "buttons/combine_button7.wav";
+new const String:g_sMenuSoundOK[] = "buttons/button14.wav";
+new const String:g_sMenuSoundCancel[] = "buttons/combine_button7.wav";
 
-// Some other globals for replay file generation
-char g_randomID[MAXPLAYERS+1][10];
-char g_replayFile[MAXPLAYERS+1][100];
+char g_sRandomID[MAXPLAYERS+1][10];
+char g_sReplayFile[MAXPLAYERS+1][100];
 
-// Global booleans
-bool IsRecording[MAXPLAYERS+1];
-bool IsEditingXPThreshold[MAXPLAYERS+1];
+bool g_bIsRecording[MAXPLAYERS+1];
+bool g_bIsEditingXPThreshold[MAXPLAYERS+1];
 
-// Global integers
-int clientTotalXP[MAXPLAYERS+1] = 0;
-int highlightXPThreshold[MAXPLAYERS+1] = HIGHLIGHT_THRESHOLD_DEFAULT;
-int roundCount;
-int g_preference[MAXPLAYERS+1] = PREF_ALL_ROUNDS;
+int g_iClientTotalXP[MAXPLAYERS+1] = 0;
+int g_iHighlightXPThreshold[MAXPLAYERS+1] = HIGHLIGHT_THRESHOLD_DEFAULT;
+int g_iRoundCount;
+int g_iPreference[MAXPLAYERS+1] = PREF_ALL_ROUNDS;
 
 public Plugin myinfo =
 {
@@ -64,21 +60,21 @@ public void OnPluginStart()
 
 public void OnClientDisconnect(int client)
 {
-	highlightXPThreshold[client] = HIGHLIGHT_THRESHOLD_DEFAULT;
-	IsEditingXPThreshold[client] = false;
-	IsRecording[client] = false;
+	g_iHighlightXPThreshold[client] = HIGHLIGHT_THRESHOLD_DEFAULT;
+	g_bIsEditingXPThreshold[client] = false;
+	g_bIsRecording[client] = false;
 }
 
 public void OnMapEnd()
 {
-	roundCount = 0;
+	g_iRoundCount = 0;
 
 	for (new i = 1; i <= MaxClients; i++)
 	{
 		if (!IsValidClient(i) || IsFakeClient(i))
 			continue;
 
-		if (IsRecording[i])
+		if (g_bIsRecording[i])
 		{
 			if (IsValidClient(i))
 			{
@@ -92,23 +88,23 @@ public void OnMapEnd()
 
 public Action Event_RoundStart(Handle event, const char[] Name, bool dontBroadcast)
 {
-	if (roundCount > 0)
+	if (g_iRoundCount > 0)
 	{
-		roundCount++;
+		g_iRoundCount++;
 	}
 	// Deduce round count from team scores if plugin was loaded mid game.
 	// This ignores ties but gives some context for replay naming.
 	else
 	{
-		roundCount += GetTeamScore(TEAM_JINRAI) + GetTeamScore(TEAM_NSF);
+		g_iRoundCount += GetTeamScore(TEAM_JINRAI) + GetTeamScore(TEAM_NSF);
 	}
 
 	for (int i = 1; i <= MaxClients; i++)
 	{
-		if (!IsRecording[i] || !IsValidClient(i) || IsFakeClient(i))
+		if (!g_bIsRecording[i] || !IsValidClient(i) || IsFakeClient(i))
 			continue;
 
-		if (g_preference[i] == PREF_ALL_ROUNDS || g_preference[i] == PREF_HIGHLIGHTS)
+		if (g_iPreference[i] == PREF_ALL_ROUNDS || g_iPreference[i] == PREF_HIGHLIGHTS)
 		{
 			StartRecord(i);
 		}
@@ -119,12 +115,12 @@ void StartRecord(int client)
 {
 	if (!IsValidClient(client))
 	{
-		ThrowError("%s Invalid client %i attempted to StartRecord()", g_tag, client);
+		ThrowError("%s Invalid client %i attempted to StartRecord()", g_sTag, client);
 	}
-	if (!IsRecording[client])
+	if (!g_bIsRecording[client])
 	{
 		ThrowError("%s Client %i reached StartRecord() even though \
-IsRecording[client] = false", g_tag, client);
+g_bIsRecording[client] = false", g_sTag, client);
 	}
 
 	char mapName[64];
@@ -135,46 +131,46 @@ IsRecording[client] = false", g_tag, client);
 
 	GenerateRandomID(client);
 
-	char commandBuffer[25 + sizeof(time) + sizeof(mapName) + sizeof(roundCount) + sizeof(g_randomID)];
+	char commandBuffer[25 + sizeof(time) + sizeof(mapName) + sizeof(g_iRoundCount) + sizeof(g_sRandomID)];
 
-	if (g_preference[client] == PREF_ALL_ROUNDS) // Record every round separately
+	if (g_iPreference[client] == PREF_ALL_ROUNDS) // Record every round separately
 	{
-		if (roundCount < 1)
+		if (g_iRoundCount < 1)
 			Format(commandBuffer, sizeof(commandBuffer), "record auto_%s_time-%s_warmup", time, mapName);
 
 		else
-			Format(commandBuffer, sizeof(commandBuffer), "record auto_%s_time-%s_round-%i", time, mapName, roundCount);
+			Format(commandBuffer, sizeof(commandBuffer), "record auto_%s_time-%s_round-%i", time, mapName, g_iRoundCount);
 
 		ReplaceString(commandBuffer, sizeof(commandBuffer), "record ", "");
-		strcopy(g_replayFile[client], sizeof(g_replayFile), commandBuffer);
+		strcopy(g_sReplayFile[client], sizeof(g_sReplayFile), commandBuffer);
 	}
 
-	else if (g_preference[client] == PREF_WHOLE_MAPS) // Record whole maps
+	else if (g_iPreference[client] == PREF_WHOLE_MAPS) // Record whole maps
 	{
-		Format(commandBuffer, sizeof(commandBuffer), "record auto_%s_%s_%s", time, mapName, g_randomID[client]);
-		strcopy(g_replayFile[client], sizeof(g_replayFile), commandBuffer);
+		Format(commandBuffer, sizeof(commandBuffer), "record auto_%s_%s_%s", time, mapName, g_sRandomID[client]);
+		strcopy(g_sReplayFile[client], sizeof(g_sReplayFile), commandBuffer);
 	}
 
 	else // Record only highlights, overwrite "boring" stuff by using the same record name. Experimental.
 	{
-		int gainedXP = GetEntProp(client, Prop_Data, "m_iFrags") - clientTotalXP[client];
+		int gainedXP = GetEntProp(client, Prop_Data, "m_iFrags") - g_iClientTotalXP[client];
 
-		if (gainedXP >= highlightXPThreshold[client] || strlen(g_replayFile[client]) < 1)
+		if (gainedXP >= g_iHighlightXPThreshold[client] || strlen(g_sReplayFile[client]) < 1)
 		{
-			Format(commandBuffer, sizeof(commandBuffer), "record auto_%s_%s_%s", time, mapName, g_randomID[client]);
-			strcopy(g_replayFile[client], sizeof(g_replayFile), commandBuffer);
+			Format(commandBuffer, sizeof(commandBuffer), "record auto_%s_%s_%s", time, mapName, g_sRandomID[client]);
+			strcopy(g_sReplayFile[client], sizeof(g_sReplayFile), commandBuffer);
 		}
 
 		else
 		{
-			PrintToConsole(client, "%s Got %i XP last round while threshold is %i. Overwriting %s.dem.", g_tag, gainedXP, highlightXPThreshold[client], g_replayFile[client]);
+			PrintToConsole(client, "%s Got %i XP last round while threshold is %i. Overwriting %s.dem.", g_sTag, gainedXP, g_iHighlightXPThreshold[client], g_sReplayFile[client]);
 		}
 
-		clientTotalXP[client] += gainedXP;
+		g_iClientTotalXP[client] += gainedXP;
 	}
 
 #if defined DEBUG
-		PrintToServer("%s Recording to %s.dem...", g_tag, g_replayFile[client]);
+		PrintToServer("%s Recording to %s.dem...", g_sTag, g_sReplayFile[client]);
 		PrintToChat(client, "Started new record");
 		PrintToConsole(client, "Command: %s", commandBuffer);
 #else
@@ -190,23 +186,23 @@ public Action Panel_Record_Main(int client, int args)
 	DrawPanelText(panel, " ");
 
 	char prefBuffer[128];
-	if (g_preference[client] == PREF_WHOLE_MAPS)
+	if (g_iPreference[client] == PREF_WHOLE_MAPS)
 	{
-		Format(prefBuffer, sizeof(prefBuffer), "Recording mode: %s", g_prefWholeMaps);
+		Format(prefBuffer, sizeof(prefBuffer), "Recording mode: %s", g_sPrefWholeMaps);
 	}
-	else if (g_preference[client] == PREF_HIGHLIGHTS)
+	else if (g_iPreference[client] == PREF_HIGHLIGHTS)
 	{
-		Format(prefBuffer, sizeof(prefBuffer), "Recording mode: %s", g_prefHighlights);
+		Format(prefBuffer, sizeof(prefBuffer), "Recording mode: %s", g_sPrefHighlights);
 	}
 	else
 	{
-		Format(prefBuffer, sizeof(prefBuffer), "Recording mode: %s", g_prefAllRounds);
+		Format(prefBuffer, sizeof(prefBuffer), "Recording mode: %s", g_sPrefAllRounds);
 	}
 
-	if (IsRecording[client])
+	if (g_bIsRecording[client])
 	{
 		char buffer[128];
-		Format(buffer, sizeof(buffer), "Currently recording: %s.dem", g_replayFile[client]);
+		Format(buffer, sizeof(buffer), "Currently recording: %s.dem", g_sReplayFile[client]);
 
 		DrawPanelText(panel, buffer);
 		DrawPanelText(panel, prefBuffer);
@@ -239,14 +235,14 @@ public PanelHandler_Main(Handle menu, MenuAction action, int client, int choice)
 	if (choice < PANEL_CHOICE_ENUM_COUNT)
 	{
 		Command_ConfigureRecord(client, choice);
-		PrecacheSound(g_menuSoundOk);
-		EmitSoundToClient(client, g_menuSoundOk);
+		PrecacheSound(g_sMenuSoundOK);
+		EmitSoundToClient(client, g_sMenuSoundOK);
 	}
 	// Exit
 	else
 	{
-		PrecacheSound(g_menuSoundCancel);
-		EmitSoundToClient(client, g_menuSoundCancel);
+		PrecacheSound(g_sMenuSoundCancel);
+		EmitSoundToClient(client, g_sMenuSoundCancel);
 	}
 }
 
@@ -262,23 +258,23 @@ public PanelHandler_Preferences(Handle menu, MenuAction action, int client, int 
 		SetPanelTitle(panel, "Edit preference");
 
 		DrawPanelText(panel, " ");
-		DrawPanelItem(panel, g_prefWholeMaps);
-		DrawPanelItem(panel, g_prefHighlights);
-		DrawPanelItem(panel, g_prefAllRounds);
+		DrawPanelItem(panel, g_sPrefWholeMaps);
+		DrawPanelItem(panel, g_sPrefHighlights);
+		DrawPanelItem(panel, g_sPrefAllRounds);
 		DrawPanelItem(panel, "Back");
 
 		SendPanelToClient(panel, client, PanelHandler_Preferences_Edit, 20);
 		CloseHandle(panel);
 
-		PrecacheSound(g_menuSoundOk);
-		EmitSoundToClient(client, g_menuSoundOk);
+		PrecacheSound(g_sMenuSoundOK);
+		EmitSoundToClient(client, g_sMenuSoundOK);
 	}
 	// Go back
 	else
 	{
 		Panel_Record_Main(client, 2);
-		PrecacheSound(g_menuSoundCancel);
-		EmitSoundToClient(client, g_menuSoundCancel);
+		PrecacheSound(g_sMenuSoundCancel);
+		EmitSoundToClient(client, g_sMenuSoundCancel);
 	}
 }
 
@@ -289,14 +285,14 @@ public PanelHandler_Preferences_Edit(Handle menu, MenuAction action, int client,
 
 	if (choice > PREF_ENUM_COUNT)
 	{
-		PrecacheSound(g_menuSoundCancel);
-		EmitSoundToClient(client, g_menuSoundCancel);
+		PrecacheSound(g_sMenuSoundCancel);
+		EmitSoundToClient(client, g_sMenuSoundCancel);
 	}
 	else
 	{
-		g_preference[client] = choice;
-		PrecacheSound(g_menuSoundOk);
-		EmitSoundToClient(client, g_menuSoundOk);
+		g_iPreference[client] = choice;
+		PrecacheSound(g_sMenuSoundOK);
+		EmitSoundToClient(client, g_sMenuSoundOK);
 	}
 
 	Command_ConfigureRecord(client, PANEL_CHOICE_MODE);
@@ -308,16 +304,16 @@ public PanelHandler_HighlightCriteria(Handle menu, MenuAction action, int client
 	{
 		if (choice == 1)
 		{
-			EmitSoundToClient(client, g_menuSoundOk);
-			PrintToChat(client, "%s Please type the XP threshold in the chat. Type \"cancel\" to cancel.", g_tag);
-			IsEditingXPThreshold[client] = true;
+			EmitSoundToClient(client, g_sMenuSoundOK);
+			PrintToChat(client, "%s Please type the XP threshold in the chat. Type \"cancel\" to cancel.", g_sTag);
+			g_bIsEditingXPThreshold[client] = true;
 			AddCommandListener(SayCallback_XPThreshold, "say");
 			AddCommandListener(SayCallback_XPThreshold, "say_team");
 		}
 
 		else
 		{
-			EmitSoundToClient(client, g_menuSoundCancel);
+			EmitSoundToClient(client, g_sMenuSoundCancel);
 			Panel_Record_Main(client, 1); // Back to main menu.
 		}
 	}
@@ -325,7 +321,7 @@ public PanelHandler_HighlightCriteria(Handle menu, MenuAction action, int client
 
 public Action SayCallback_XPThreshold(int client, const char[] command, int argc)
 {
-	if (!IsEditingXPThreshold[client])
+	if (!g_bIsEditingXPThreshold[client])
 		return Plugin_Continue;
 
 	decl String:message[256];
@@ -336,10 +332,10 @@ public Action SayCallback_XPThreshold(int client, const char[] command, int argc
 
 	if (Contains(message, "cancel"))
 	{
-		PrintToChat(client, "%s Cancelled editing the XP threshold.", g_tag);
+		PrintToChat(client, "%s Cancelled editing the XP threshold.", g_sTag);
 		RemoveCommandListener(SayCallback_XPThreshold, "say");
 		RemoveCommandListener(SayCallback_XPThreshold, "say_team");
-		IsEditingXPThreshold[client] = false;
+		g_bIsEditingXPThreshold[client] = false;
 		return Plugin_Stop;
 	}
 
@@ -347,19 +343,19 @@ public Action SayCallback_XPThreshold(int client, const char[] command, int argc
 
 	if (threshold < 0)
 	{
-		PrintToChat(client, "%s Please insert a positive integer value.", g_tag);
+		PrintToChat(client, "%s Please insert a positive integer value.", g_sTag);
 		PrintToChat(client, "Type \"cancel\" to stop editing the threshold.");
 		return Plugin_Stop;
 	}
 
-	highlightXPThreshold[client] = threshold;
+	g_iHighlightXPThreshold[client] = threshold;
 
-	IsEditingXPThreshold[client] = false;
+	g_bIsEditingXPThreshold[client] = false;
 
 	RemoveCommandListener(SayCallback_XPThreshold, "say");
 	RemoveCommandListener(SayCallback_XPThreshold, "say_team");
 
-	PrintToChat(client, "%s Threshold has been changed to %i XP.", g_tag, threshold);
+	PrintToChat(client, "%s Threshold has been changed to %i XP.", g_sTag, threshold);
 
 	Command_ConfigureRecord(client, 3); // Draw the XP edit panel again.
 
@@ -372,17 +368,17 @@ void Command_ConfigureRecord(int client, int choice)
 	{
 		case PANEL_CHOICE_RECORD:
 		{
-			if (IsRecording[client])
+			if (g_bIsRecording[client])
 			{
 				ClientCommand(client, "stop");
-				PrintToChat(client, "%s Stopped recording.", g_tag);
-				IsRecording[client] = false;
+				PrintToChat(client, "%s Stopped recording.", g_sTag);
+				g_bIsRecording[client] = false;
 				Panel_Record_Main(client, 1);
 			}
 
 			else
 			{
-				IsRecording[client] = true;
+				g_bIsRecording[client] = true;
 				StartRecord(client);
 				Panel_Record_Main(client, 2);
 			}
@@ -396,17 +392,17 @@ void Command_ConfigureRecord(int client, int choice)
 			DrawPanelText(panel, " ");
 			char prefBuffer[128];
 
-			if (g_preference[client] == PREF_WHOLE_MAPS)
+			if (g_iPreference[client] == PREF_WHOLE_MAPS)
 			{
-				Format(prefBuffer, sizeof(prefBuffer), "Recording mode: %s", g_prefWholeMaps);
+				Format(prefBuffer, sizeof(prefBuffer), "Recording mode: %s", g_sPrefWholeMaps);
 			}
-			else if (g_preference[client] == PREF_HIGHLIGHTS)
+			else if (g_iPreference[client] == PREF_HIGHLIGHTS)
 			{
-				Format(prefBuffer, sizeof(prefBuffer), "Recording mode: %s", g_prefHighlights);
+				Format(prefBuffer, sizeof(prefBuffer), "Recording mode: %s", g_sPrefHighlights);
 			}
 			else
 			{
-				Format(prefBuffer, sizeof(prefBuffer), "Recording mode: %s", g_prefAllRounds);
+				Format(prefBuffer, sizeof(prefBuffer), "Recording mode: %s", g_sPrefAllRounds);
 			}
 
 			DrawPanelText(panel, prefBuffer);
@@ -426,7 +422,7 @@ void Command_ConfigureRecord(int client, int choice)
 			DrawPanelText(panel, " ");
 
 			char buffer[128];
-			Format(buffer, sizeof(buffer), "Current threshold for keeping a round replay: %i XP", highlightXPThreshold[client]);
+			Format(buffer, sizeof(buffer), "Current threshold for keeping a round replay: %i XP", g_iHighlightXPThreshold[client]);
 			DrawPanelText(panel, buffer);
 			DrawPanelText(panel, " ");
 			DrawPanelItem(panel, "Edit XP threshold for saving a round replay");
@@ -448,9 +444,9 @@ void GenerateRandomID(int client)
 	for (i = 0; i < 10; i++)
 	{
 		int randomIndex = GetRandomInt(0, length - 1);
-		g_randomID[client][i] = alphanumeric[randomIndex];
+		g_sRandomID[client][i] = alphanumeric[randomIndex];
 	}
-	g_randomID[client][i] = 0;
+	g_sRandomID[client][i] = 0;
 }
 
 bool Contains(const char[] haystack, const char[] needle)
